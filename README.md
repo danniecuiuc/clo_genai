@@ -225,7 +225,7 @@ Outputs:
 
 ---
 
-## One-line Summary
+## Summary
 
 **Training:** real data for comps + real/synthetic data for pricing-model training  
 **Production:** user input goes through one shared preprocessing path, then branches into pricing output and real-deal similarity output in parallel
