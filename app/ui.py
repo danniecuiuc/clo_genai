@@ -1,14 +1,7 @@
 """
 CLO Pricing + Similarity Streamlit Demo
 
-Flow:
-Upload file
--> cleaning.clean_raw_dataframe
--> pipeline.prepare_dataset on real cleaned data
--> Branch A: Similarity uses processed real data directly
--> Branch B: Pricing creates synthetic data, then runs pipeline + model training
-
-Run:
+Run from project root:
     python -m streamlit run app/ui.py
 """
 
@@ -16,7 +9,9 @@ from __future__ import annotations
 
 import json
 import sys
+from importlib import import_module
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -24,26 +19,46 @@ import streamlit as st
 from sklearn.model_selection import train_test_split
 
 
-# ---------------------------------------------------------------------
-# Make imports work when running from project root:
-#     python -m streamlit run app/ui.py
-# ---------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+APP_DIR = Path(__file__).resolve().parent
+
+for path in [PROJECT_ROOT, APP_DIR]:
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
 
 
-from preprocessing import cleaning as cleaning_mod
-from preprocessing import pipeline as pipe
-from synthetic import bootstrap_generator as bootstrap_mod
-from pricing import models as pricing_models
-from explainability import explainability as explain_mod
-from uncertainty import uncertainty as uncertainty_mod
-from similarity import siilarity_V2 as similarity_mod
+def import_first(*module_names: str) -> Any:
+    """Import the first available module from a list of possible locations."""
+    errors: list[str] = []
+
+    for module_name in module_names:
+        try:
+            return import_module(module_name)
+        except ModuleNotFoundError as exc:
+            errors.append(f"{module_name}: {exc}")
+
+    raise ModuleNotFoundError(
+        "Could not import any of these modules:\n"
+        + "\n".join(f"- {module_name}" for module_name in module_names)
+        + "\n\nOriginal errors:\n"
+        + "\n".join(errors)
+    )
+
+
+cleaning_mod = import_first("preprocessing.cleaning", "cleaning")
+pipe = import_first("preprocessing.pipeline", "pipeline")
+bootstrap_mod = import_first("synthetic.bootstrap_generator", "bootstrap_generator")
+pricing_models = import_first("pricing.models", "models")
+explain_mod = import_first("pricing.explainability", "explainability")
+uncertainty_mod = import_first("pricing.uncertainty", "uncertainty")
+similarity_mod = import_first(
+    "similarity.similarity_V2",
+    "similarity_V2",
+)
 
 try:
-    import common.config as config
-except Exception:
+    config = import_module("common.config")
+except ModuleNotFoundError:
     config = None
 
 
@@ -67,10 +82,6 @@ TARGET_CANDIDATES = [
     "Target",
 ]
 
-
-# ============================================================
-# UI helpers
-# ============================================================
 
 def read_file(uploaded_file, header_row: int) -> pd.DataFrame:
     if uploaded_file.name.lower().endswith(".csv"):
@@ -108,11 +119,6 @@ def to_dense(x):
     """Convert scipy sparse matrix to dense numpy array if needed."""
     return x.toarray() if hasattr(x, "toarray") else np.asarray(x)
 
-
-# ============================================================
-# Pricing branch
-# Synthetic data is generated first, then pipeline preprocessing is fitted.
-# ============================================================
 
 def train_and_price(
     pricing_train_df: pd.DataFrame,
@@ -177,11 +183,6 @@ def train_and_price(
     }
 
 
-# ============================================================
-# Similarity branch
-# Uses processed real data directly.
-# ============================================================
-
 def similarity_from_processed_real(
     clean_df: pd.DataFrame,
     prepared_real,
@@ -219,10 +220,6 @@ def similarity_from_processed_real(
 
     return ranked_raw.reset_index(drop=True), ranked_clean.reset_index(drop=True)
 
-
-# ============================================================
-# Streamlit UI
-# ============================================================
 
 st.set_page_config(page_title="CLO Demo", layout="wide")
 
@@ -288,20 +285,17 @@ with st.sidebar:
     )
 
 
-# --------------------------
-# Main cleaning trunk
-# --------------------------
 try:
     clean_df = cleaning_mod.clean_raw_dataframe(raw_df)
 
     if id_col in clean_df.columns:
         clean_df = clean_df[clean_df[id_col].notna()]
 
-    if target_col in clean_df.columns:
-        clean_df[target_col] = pd.to_numeric(clean_df[target_col], errors="coerce")
-        clean_df = clean_df[clean_df[target_col].notna()]
+    if target_col not in clean_df.columns:
+        raise ValueError(f"Selected target column '{target_col}' was not found after cleaning.")
 
-    clean_df = clean_df.reset_index(drop=True)
+    clean_df[target_col] = pd.to_numeric(clean_df[target_col], errors="coerce")
+    clean_df = clean_df[clean_df[target_col].notna()].reset_index(drop=True)
 
 except Exception as exc:
     st.error(f"Cleaning failed: {exc}")
@@ -313,9 +307,6 @@ if clean_df.empty:
     st.stop()
 
 
-# --------------------------
-# Main pipeline trunk on real data
-# --------------------------
 try:
     prepared_real = pipe.prepare_dataset(clean_df, target_col=target_col)
 except Exception as exc:
@@ -412,7 +403,6 @@ if not run:
 
 
 try:
-    # Branch A: similarity directly from processed real data
     similarity_raw, similarity_clean = similarity_from_processed_real(
         clean_df=clean_df,
         prepared_real=prepared_real,
@@ -421,7 +411,6 @@ try:
         k=int(n_neighbors),
     )
 
-    # Branch B: pricing uses synthetic-augmented data, then pipeline preprocessing
     pricing_train_df = bootstrap_mod.combine_real_and_synthetic(
         real_df=clean_df,
         synthetic_df=None,
