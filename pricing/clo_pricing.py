@@ -131,8 +131,11 @@ except ImportError:
 # ── Config ─────────────────────────────────────────────────────────────────
 PROJECT_ROOT    = Path(__file__).resolve().parents[1]
 DATA_PATH       = str(PROJECT_ROOT / "input" / "raw" / "CLO_Tranche_Data.xlsx")
-LOG_PATH        = "audit_log.jsonl"
-MODEL_VERSION   = "v1.0"
+OUTPUT_DIR = PROJECT_ROOT / "output"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+LOG_PATH = OUTPUT_DIR / "audit_log.jsonl"
+MODEL_VERSION = "v1.0"
 WRITE_ARTIFACTS = os.getenv("CLO_WRITE_ARTIFACTS", "0").strip().lower() in {"1", "true", "yes", "y", "on"}
 N_COMPS         = 5          # number of comparable deals to return
 N_SYNTH_ROWS    = 500        # synthetic rows to generate (set 0 to skip)
@@ -187,7 +190,7 @@ def audit(record: dict):
         return
     record["timestamp"] = datetime.utcnow().isoformat()
     record["model_version"] = MODEL_VERSION
-    with open(LOG_PATH, "a") as f:
+    with open(LOG_PATH, "a", encoding="utf-8") as f:
         f.write(json.dumps(record) + "\n")
 
 
@@ -233,7 +236,7 @@ def load_data(path: str = DATA_PATH) -> pd.DataFrame:
 # 2. FEATURE ENGINEERING
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Leave blank, did not have much success when I tried this. 
+# Leave blank, did not have much success when I tried this.
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 3. PREPROCESSING PIPELINE
@@ -619,8 +622,8 @@ def compare_synthesizers(
     print("═"*80)
 
     if WRITE_ARTIFACTS:
-        summary.to_csv("synthesizer_comparison_cv.csv", index=False)
-        raw.to_csv("synthesizer_comparison_cv_raw.csv", index=False)
+        summary.to_csv(OUTPUT_DIR / "synthesizer_comparison_cv.csv", index=False)
+        raw.to_csv(OUTPUT_DIR / "synthesizer_comparison_cv_raw.csv", index=False)
         log.info("Saved synthesizer_comparison_cv.csv and synthesizer_comparison_cv_raw.csv")
     return summary
 
@@ -744,7 +747,7 @@ def run_ablation(
     print("═"*80)
 
     if WRITE_ARTIFACTS:
-        results.to_csv("ablation_manager_signal.csv", index=False)
+        results.to_csv(OUTPUT_DIR / "ablation_manager_signal.csv", index=False)
         log.info("Saved ablation_manager_signal.csv")
     return results
 
@@ -1036,7 +1039,7 @@ class PricingModel:
         print("  Agreement ~ — feature rank differs (nonlinear / interaction effect)\n")
         print(merged.to_string(index=False))
         if WRITE_ARTIFACTS:
-            merged.to_csv("feature_importance_comparison.csv", index=False)
+            merged.to_csv(OUTPUT_DIR / "feature_importance_comparison.csv", index=False)
             log.info("Saved feature_importance_comparison.csv")
 
         # Side-by-side bar chart
@@ -1057,7 +1060,7 @@ class PricingModel:
         plt.suptitle("Feature Importance Comparison: Ridge vs XGBoost", fontsize=13, fontweight="bold")
         plt.tight_layout()
         if WRITE_ARTIFACTS:
-            plt.savefig("feature_importance_comparison.png", dpi=150)
+            plt.savefig(OUTPUT_DIR / "feature_importance_comparison.png", dpi=150, bbox_inches="tight")
         plt.show()
         if WRITE_ARTIFACTS:
             log.info("Feature importance comparison chart saved to feature_importance_comparison.png")
@@ -1078,7 +1081,7 @@ class PricingModel:
         ax.set_title("Actuals vs Predicted – Test Set")
         plt.tight_layout()
         if WRITE_ARTIFACTS:
-            plt.savefig("actuals_vs_predicted.png", dpi=150)
+            plt.savefig(OUTPUT_DIR / "actuals_vs_predicted.png", dpi=150, bbox_inches="tight")
         plt.show()
         if WRITE_ARTIFACTS:
             log.info("Actuals vs Predicted chart saved to actuals_vs_predicted.png")
@@ -1375,7 +1378,7 @@ def main(run_batch: bool = False, run_query: bool = False, run_compare: bool = F
         log.info("Running batch pricing on test set …")
         batch_results = batch_price(test_df, pricing_model, sim_module, train_aug)
         if WRITE_ARTIFACTS:
-            batch_results.to_csv("batch_results.csv", index=False)
+            batch_results.to_csv(OUTPUT_DIR / "batch_results.csv", index=False)
         print("\n── Batch Pricing Results (first 10) ──")
         print(batch_results.head(10).to_string(index=False))
         if WRITE_ARTIFACTS:
@@ -1442,7 +1445,7 @@ def main(run_batch: bool = False, run_query: bool = False, run_compare: bool = F
     print("\n── Predicted vs Actual Cover Price — XGBoost by Synthesizer (Test Set) ──")
     print(results_df.to_string(index=False))
     if WRITE_ARTIFACTS:
-        results_df.to_csv("predicted_vs_actual.csv", index=False)
+        results_df.to_csv(OUTPUT_DIR / "predicted_vs_actual.csv", index=False)
         log.info("Saved predicted_vs_actual.csv")
 
     # ── SHAP (if available) ───────────────────────────────────────────────
@@ -1459,10 +1462,10 @@ def main(run_batch: bool = False, run_query: bool = False, run_compare: bool = F
 #   RUN_QUERY : price the single example tranche in EXAMPLE_QUERY
 # ══════════════════════════════════════════════════════════════════════════════
 
-RUN_BATCH    = False
+RUN_BATCH    = True
 RUN_QUERY    = True
-RUN_COMPARE  = True    # Benchmark all synthesizers vs Ridge and XGBoost (5-fold CV)
-RUN_ABLATION = False   # Manager signal ablation (already done — categorical dropped)
+RUN_COMPARE  = False   # Set True only if you want slow synthesizer CV comparison.
+RUN_ABLATION = False   # Set True if you want manager-signal ablation output.
 
 if __name__ == "__main__":
     main(
@@ -1471,10 +1474,3 @@ if __name__ == "__main__":
         run_compare=RUN_COMPARE,
         run_ablation_flag=RUN_ABLATION,
     )
-
-
-# In[ ]:
-
-
-
-

@@ -22,6 +22,7 @@ Danni Chen (dc3944), Grant Bloch (gb2934), Vijeet Prasad (vp2580), Zheng Sun (zs
 ##### How to run (exact commands)
 ```shell
 cd "/Users/nini/Library/Mobile Documents/com~apple~CloudDocs/dev_icloud/clo_genai"
+CLO_WRITE_ARTIFACTS=1 python pricing/clo_pricing.py
 ```
 A) Train and save bundle from CLI
 ```shell
