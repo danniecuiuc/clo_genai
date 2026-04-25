@@ -17,7 +17,7 @@ FEATURE_IMPORTANCE_PNG = ARTIFACTS_DIR / 'feature_importance.png'
 TRAINING_PREDICTIONS_CSV = ARTIFACTS_DIR / 'validation_predictions.csv'
 PROCESSED_TRAINING_DATA_CSV = ARTIFACTS_DIR / 'processed_training_data.csv'
 
-TARGET_COL = 'Spread'
+TARGET_COL = 'Price'
 ID_COL = 'Bloomberg ID'
 MANAGER_COL = 'Collateral manager'
 ROW_SOURCE_COL = 'row_source'
