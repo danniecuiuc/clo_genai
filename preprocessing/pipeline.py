@@ -20,9 +20,9 @@ class PreparedDataset:
     model_columns: list[str]
 
 
-def infer_model_columns(feature_df: pd.DataFrame) -> list[str]:
-    numeric_candidates = [col for col in feature_df.columns if col in NUMERIC_COLUMNS]
-    categorical_candidates = [col for col in feature_df.columns if col in CATEGORICAL_COLUMNS]
+def infer_model_columns(feature_df: pd.DataFrame, target_col: str = TARGET_COL) -> list[str]:
+    numeric_candidates = [col for col in feature_df.columns if col in NUMERIC_COLUMNS and col != target_col]
+    categorical_candidates = [col for col in feature_df.columns if col in CATEGORICAL_COLUMNS and col != target_col]
     engineered_candidates = [
         col for col in feature_df.columns
         if col.endswith('_year')
@@ -42,7 +42,7 @@ def infer_model_columns(feature_df: pd.DataFrame) -> list[str]:
 
 def prepare_dataset(df: pd.DataFrame, target_col: str = TARGET_COL) -> PreparedDataset:
     feature_df = build_feature_frame(df)
-    model_columns = infer_model_columns(feature_df)
+    model_columns = infer_model_columns(feature_df, target_col=target_col)
     x = feature_df[model_columns].copy()
     y = feature_df[target_col].copy() if target_col in feature_df.columns else None
     return PreparedDataset(raw=df.copy(), features=x, target=y, model_columns=model_columns)
