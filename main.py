@@ -13,7 +13,7 @@ def build_parser() -> argparse.ArgumentParser:
     train_cmd = sub.add_parser('train', help='Train preprocessing, pricing, and product bundle.')
     train_cmd.add_argument('--raw-input', required=True)
     train_cmd.add_argument('--synthetic-input', default=None)
-    train_cmd.add_argument('--target', default='Spread')
+    train_cmd.add_argument('--target', default='Price')
     train_cmd.add_argument('--test-size', type=float, default=0.2)
     train_cmd.add_argument('--random-state', type=int, default=42)
     train_cmd.add_argument('--neighbors', type=int, default=10)

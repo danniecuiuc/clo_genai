@@ -28,6 +28,7 @@ import logging
 import os
 import warnings
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -131,9 +132,11 @@ except ImportError:
     HAS_PLOT = False
 
 # ── Config ─────────────────────────────────────────────────────────────────
-DATA_PATH       = "/Users/gbloch/Downloads/CLO tranche pricing/CLO_Tranche_Data.xlsx"
+PROJECT_ROOT    = Path(__file__).resolve().parents[1]
+DATA_PATH       = str(PROJECT_ROOT / "input" / "raw" / "CLO_Tranche_Data.xlsx")
 LOG_PATH        = "audit_log.jsonl"
 MODEL_VERSION   = "v1.0"
+WRITE_ARTIFACTS = os.getenv("CLO_WRITE_ARTIFACTS", "0").strip().lower() in {"1", "true", "yes", "y", "on"}
 N_COMPS         = 5          # number of comparable deals to return
 N_SYNTH_ROWS    = 500        # synthetic rows to generate (set 0 to skip)
 # Synthesizer choice: "ctgan" | "glow" | "ddpm" | "bootstrap"
@@ -141,7 +144,7 @@ SYNTH_METHOD    = "ddpm"
 RANDOM_STATE    = 42
 TEST_SIZE       = 0.15
 
-TARGET          = "Cover Price"
+TARGET          = "Price"
 
 NUMERIC_FEATURES = [
     "Manager Discount",
@@ -182,6 +185,8 @@ log = logging.getLogger(__name__)
 
 def audit(record: dict):
     """Append a JSON record to the audit log for reproducibility."""
+    if not WRITE_ARTIFACTS:
+        return
     record["timestamp"] = datetime.utcnow().isoformat()
     record["model_version"] = MODEL_VERSION
     with open(LOG_PATH, "a") as f:
@@ -606,9 +611,10 @@ def compare_synthesizers(
     print(summary[xgb_cols].to_string(index=False))
     print("═"*80)
 
-    summary.to_csv("synthesizer_comparison_cv.csv", index=False)
-    raw.to_csv("synthesizer_comparison_cv_raw.csv", index=False)
-    log.info("Saved synthesizer_comparison_cv.csv and synthesizer_comparison_cv_raw.csv")
+    if WRITE_ARTIFACTS:
+        summary.to_csv("synthesizer_comparison_cv.csv", index=False)
+        raw.to_csv("synthesizer_comparison_cv_raw.csv", index=False)
+        log.info("Saved synthesizer_comparison_cv.csv and synthesizer_comparison_cv_raw.csv")
     return summary
 
 
@@ -730,8 +736,9 @@ def run_ablation(
         print(subset.to_string(index=False))
     print("═"*80)
 
-    results.to_csv("ablation_manager_signal.csv", index=False)
-    log.info("Saved ablation_manager_signal.csv")
+    if WRITE_ARTIFACTS:
+        results.to_csv("ablation_manager_signal.csv", index=False)
+        log.info("Saved ablation_manager_signal.csv")
     return results
 
 
@@ -1021,8 +1028,9 @@ class PricingModel:
         print("  Agreement ✓ — feature ranks similarly in both models (robust signal)")
         print("  Agreement ~ — feature rank differs (nonlinear / interaction effect)\n")
         print(merged.to_string(index=False))
-        merged.to_csv("feature_importance_comparison.csv", index=False)
-        log.info("Saved feature_importance_comparison.csv")
+        if WRITE_ARTIFACTS:
+            merged.to_csv("feature_importance_comparison.csv", index=False)
+            log.info("Saved feature_importance_comparison.csv")
 
         # Side-by-side bar chart
         fig, axes = plt.subplots(1, 2, figsize=(16, 7))
@@ -1041,9 +1049,11 @@ class PricingModel:
 
         plt.suptitle("Feature Importance Comparison: Ridge vs XGBoost", fontsize=13, fontweight="bold")
         plt.tight_layout()
-        plt.savefig("feature_importance_comparison.png", dpi=150)
+        if WRITE_ARTIFACTS:
+            plt.savefig("feature_importance_comparison.png", dpi=150)
         plt.show()
-        log.info("Feature importance comparison chart saved to feature_importance_comparison.png")
+        if WRITE_ARTIFACTS:
+            log.info("Feature importance comparison chart saved to feature_importance_comparison.png")
 
     def plot_actuals_vs_predicted(self, X: pd.DataFrame, y: pd.Series):
         if not HAS_PLOT:
@@ -1060,9 +1070,11 @@ class PricingModel:
         ax.set_ylabel(f"Predicted {TARGET}")
         ax.set_title("Actuals vs Predicted – Test Set")
         plt.tight_layout()
-        plt.savefig("actuals_vs_predicted.png", dpi=150)
+        if WRITE_ARTIFACTS:
+            plt.savefig("actuals_vs_predicted.png", dpi=150)
         plt.show()
-        log.info("Actuals vs Predicted chart saved to actuals_vs_predicted.png")
+        if WRITE_ARTIFACTS:
+            log.info("Actuals vs Predicted chart saved to actuals_vs_predicted.png")
 
 
 
@@ -1290,10 +1302,12 @@ def main(run_batch: bool = False, run_query: bool = False, run_compare: bool = F
     if run_batch:
         log.info("Running batch pricing on test set …")
         batch_results = batch_price(test_df, pricing_model, sim_module, train_aug)
-        batch_results.to_csv("batch_results.csv", index=False)
+        if WRITE_ARTIFACTS:
+            batch_results.to_csv("batch_results.csv", index=False)
         print("\n── Batch Pricing Results (first 10) ──")
         print(batch_results.head(10).to_string(index=False))
-        log.info("Full results saved to batch_results.csv")
+        if WRITE_ARTIFACTS:
+            log.info("Full results saved to batch_results.csv")
 
     # ── Single query ─────────────────────────────────────────────────────
     if run_query:
@@ -1355,8 +1369,9 @@ def main(run_batch: bool = False, run_query: bool = False, run_compare: bool = F
 
     print("\n── Predicted vs Actual Cover Price — XGBoost by Synthesizer (Test Set) ──")
     print(results_df.to_string(index=False))
-    results_df.to_csv("predicted_vs_actual.csv", index=False)
-    log.info("Saved predicted_vs_actual.csv")
+    if WRITE_ARTIFACTS:
+        results_df.to_csv("predicted_vs_actual.csv", index=False)
+        log.info("Saved predicted_vs_actual.csv")
 
     # ── SHAP (if available) ───────────────────────────────────────────────
     if HAS_SHAP and HAS_XGB:
