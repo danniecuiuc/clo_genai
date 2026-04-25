@@ -18,16 +18,30 @@ Danni Chen (dc3944), Grant Bloch (gb2934), Vijeet Prasad (vp2580), Zheng Sun (zs
 #### train models
 ##### run below training pipeline: 
 - Raw data → clean → features → synthetic data → train models → save model
-```shell
-python main.py train \
-  --raw-input "input/raw/CLO Tranche Data.xlsx" \
-  --synthetic-input "input/synthetic/bootstrap_with_real_on_top.xlsx" \
-  --target Spread
-```
 
-####  App
-uvicorn app.api:app --reload
+##### How to run (exact commands)
+```shell
+cd "/Users/nini/Library/Mobile Documents/com~apple~CloudDocs/dev_icloud/clo_genai"
+```
+A) Train and save bundle from CLI
+```shell
+python3 main.py train-save \
+  --data-path "input/raw/CLO_Tranche_Data.xlsx" \
+  --bundle-path "models/model_bundle.joblib" \
+  --synth-rows 500 \
+  --similarity-real-only
+```
+This saves model bundle to:
+models/model_bundle.joblib
+
+B) Launch UI
+```
 streamlit run app/ui.py
+```
+In UI:
+Upload user input
+Click Load Bundle + Price Query Row to get predicted price, bounds, feature importance, and comparable deals
+
 
 ### Note:
 1. pricing training data are from both real + synthetic; however, similarity reference data are from real only, 
