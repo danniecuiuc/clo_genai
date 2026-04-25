@@ -10,7 +10,7 @@ from train_pipeline.train import TrainConfig, run_training_pipeline
 
 def test_training_and_prediction_smoke() -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    raw_input = repo_root / 'input' / 'raw' / 'CLO Tranche Data.xlsx'
+    raw_input = repo_root / 'input' / 'raw' / 'CLO_Tranche_Data.xlsx'
     synthetic_input = repo_root / 'input' / 'synthetic' / 'bootstrap_with_real_on_top.xlsx'
 
     result = run_training_pipeline(

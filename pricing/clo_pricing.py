@@ -131,7 +131,7 @@ except ImportError:
     HAS_PLOT = False
 
 # ── Config ─────────────────────────────────────────────────────────────────
-DATA_PATH       = "/Users/gbloch/Downloads/CLO tranche pricing/CLO Tranche Data.xlsx"
+DATA_PATH       = "/Users/gbloch/Downloads/CLO tranche pricing/CLO_Tranche_Data.xlsx"
 LOG_PATH        = "audit_log.jsonl"
 MODEL_VERSION   = "v1.0"
 N_COMPS         = 5          # number of comparable deals to return
