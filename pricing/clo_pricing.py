@@ -20,9 +20,15 @@ Toggle RUN_* flags at the bottom to control what runs.
 import json
 import logging
 import os
+import sys
+import types
 import warnings
 from datetime import datetime
 from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 import numpy as np
 import pandas as pd
@@ -60,39 +66,39 @@ try:
 except ImportError:
     HAS_SDV = False
 
-# ── PyTorch: auto-install a Python 3.9 compatible version if needed ────────
-import sys, subprocess, types
-
+# ── Optional PyTorch imports for GLOW/DDPM synthesizers.
+# Do not auto-install packages from inside library code; if torch is unavailable,
+# GLOW/DDPM gracefully fall back to bootstrap in generate_synthetic().
 def _stub_torch():
     """Return stub modules so class definitions parse even without torch."""
     _nn = types.ModuleType("nn")
-    _nn.Module    = object
-    _nn.Linear    = object
-    _nn.ReLU      = object
-    _nn.SiLU      = object
-    _nn.Tanh      = object
-    _nn.Sequential  = object
-    _nn.ModuleList  = object
-    _nn.functional  = types.ModuleType("functional")
-    _nn.utils       = types.ModuleType("utils")
+    _nn.Module = object
+    _nn.Linear = object
+    _nn.ReLU = object
+    _nn.SiLU = object
+    _nn.Tanh = object
+    _nn.Sequential = object
+    _nn.ModuleList = object
+    _nn.functional = types.ModuleType("functional")
+    _nn.utils = types.ModuleType("utils")
     _nn.utils.clip_grad_norm_ = lambda *a, **k: None
     _torch = types.ModuleType("torch")
-    _torch.tensor    = None
-    _torch.no_grad   = lambda: __import__("contextlib").nullcontext()
-    _torch.zeros     = None
-    _torch.randn     = None
+    _torch.tensor = None
+    _torch.no_grad = lambda: __import__("contextlib").nullcontext()
+    _torch.zeros = None
+    _torch.randn = None
     _torch.randn_like = None
-    _torch.sqrt      = None
-    _torch.exp       = None
-    _torch.cat       = None
-    _torch.full      = None
-    _torch.randint   = None
-    _torch.cumprod   = None
-    _torch.linspace  = None
-    _torch.utils     = types.ModuleType("utils")
+    _torch.sqrt = None
+    _torch.exp = None
+    _torch.cat = None
+    _torch.full = None
+    _torch.randint = None
+    _torch.cumprod = None
+    _torch.linspace = None
+    _torch.utils = types.ModuleType("utils")
     _torch.utils.data = types.ModuleType("data")
     _torch.utils.data.TensorDataset = object
-    _torch.utils.data.DataLoader    = object
+    _torch.utils.data.DataLoader = object
     _optim = types.ModuleType("optim")
     _optim.Adam = object
     return _torch, _nn, _optim
@@ -103,24 +109,8 @@ try:
     import torch.optim as optim
     HAS_TORCH = True
 except Exception:
-    # torch ≥2.2 requires TypeIs from typing_extensions, which Python 3.9 lacks.
-    # Silently install a compatible version (2.1.x is the last to support 3.9).
-    print("[INFO] Installing PyTorch compatible with Python 3.9 …")
-    try:
-        subprocess.check_call([
-            sys.executable, "-m", "pip", "install", "-q",
-            "torch==2.1.2", "torchvision==0.16.2",
-            "--index-url", "https://download.pytorch.org/whl/cpu",
-        ])
-        import torch
-        import torch.nn as nn
-        import torch.optim as optim
-        HAS_TORCH = True
-        print("[INFO] PyTorch 2.1.2 installed — GLOW/DDPM available.")
-    except Exception as e:
-        print(f"[WARN] PyTorch install failed ({e}). GLOW/DDPM disabled; bootstrap will be used.")
-        HAS_TORCH = False
-        torch, nn, optim = _stub_torch()
+    HAS_TORCH = False
+    torch, nn, optim = _stub_torch()
 
 try:
     import matplotlib.pyplot as plt
@@ -140,7 +130,7 @@ WRITE_ARTIFACTS = os.getenv("CLO_WRITE_ARTIFACTS", "0").strip().lower() in {"1",
 N_COMPS         = 5          # number of comparable deals to return
 N_SYNTH_ROWS    = 500        # synthetic rows to generate (set 0 to skip)
 # Synthesizer choice: "ctgan" | "glow" | "ddpm" | "bootstrap"
-SYNTH_METHOD    = "ddpm"
+SYNTH_METHOD    = os.getenv("CLO_SYNTH_METHOD", "bootstrap")
 RANDOM_STATE    = 42
 TEST_SIZE       = 0.15
 
@@ -201,10 +191,21 @@ def audit(record: dict):
 def load_data(path: str = DATA_PATH) -> pd.DataFrame:
     """Load raw Excel, parse headers from row 0, coerce types."""
     log.info("Loading data from %s", path)
-    raw = pd.read_excel(path, header=0)
-    headers = raw.iloc[0].tolist()
-    df = raw.iloc[1:].copy()
-    df.columns = headers
+    path = str(path)
+    if path.lower().endswith(".csv"):
+        raw = pd.read_csv(path, header=0)
+    else:
+        raw = pd.read_excel(path, header=0)
+
+    # Some project workbooks have the actual headers in the first data row.
+    # If so, normalize that shape; otherwise keep the file headers as-is.
+    if "Bloomberg ID" not in raw.columns and len(raw) > 0 and "Bloomberg ID" in raw.iloc[0].astype(str).tolist():
+        headers = raw.iloc[0].tolist()
+        df = raw.iloc[1:].copy()
+        df.columns = headers
+    else:
+        df = raw.copy()
+    df.columns = [str(c).strip() for c in df.columns]
     df = df.reset_index(drop=True)
 
     # Normalize target naming so downstream code can always use TARGET.
@@ -222,7 +223,8 @@ def load_data(path: str = DATA_PATH) -> pd.DataFrame:
 
     # Parse dates (not used as features but kept for audit / filtering)
     for date_col in ["Trade Date", "Closing Date"]:
-        df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
+        if date_col in df.columns:
+            df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
 
     # Drop rows where the target is missing
     before = len(df)
@@ -1098,8 +1100,23 @@ def train_and_save_bundle(
     Train pricing + similarity models and save a reusable bundle for UI inference.
     """
     data = df.copy().reset_index(drop=True)
+    data.columns = [str(c).strip() for c in data.columns]
+
     if TARGET not in data.columns:
-        raise ValueError(f"Target column '{TARGET}' not found in input data.")
+        for candidate in TARGET_FALLBACKS:
+            if candidate in data.columns:
+                data[TARGET] = data[candidate]
+                break
+    if TARGET not in data.columns:
+        raise ValueError(f"Target column '{TARGET}' not found in input data. Tried fallbacks: {TARGET_FALLBACKS}.")
+
+    missing_features = [col for col in ALL_FEATURES if col not in data.columns]
+    if missing_features:
+        raise ValueError(f"Missing required feature columns: {missing_features}")
+
+    for col in ALL_FEATURES + [TARGET]:
+        data[col] = pd.to_numeric(data[col], errors="coerce")
+    data = data.dropna(subset=[TARGET]).reset_index(drop=True)
 
     train_df, test_df = train_test_split(data, test_size=TEST_SIZE, random_state=random_state)
     if synth_rows > 0:

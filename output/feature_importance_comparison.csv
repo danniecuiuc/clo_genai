@@ -1,16 +1,22 @@
 feature,Ridge (norm coef),XGBoost (gain),Agreement
-MVOC (w/o X),0.166,0.166,✓
-Spread,0.1112,0.1112,✓
-Deal WACC,0.1077,0.1077,✓
-RP Yrs left,0.0757,0.0757,✓
-% <80,0.0621,0.0621,✓
-Attach,0.0539,0.0539,✓
-MVOC,0.0414,0.0414,✓
-Thickness,0.0402,0.0402,✓
-% CCC,0.0354,0.0354,✓
-Manager Discount,0.0346,0.0346,✓
-HY CDX,0.0305,0.0305,✓
-LSTA Index,0.0295,0.0295,✓
-LSTA 100 Index,0.0269,0.0269,✓
-Excess Spread,0.0242,0.0242,✓
-AAA Coupon,0.0241,0.0241,✓
+MVOC,0.0579,0.3857,~
+MVOC (w/o X),0.0899,0.2162,✓
+Junior OC,0.0,0.0953,~
+Palmer Square Price Index,0.0,0.0686,~
+LSTA 100 Index,0.0528,0.0347,✓
+% <80,0.1172,0.033,~
+Equity NAV,0.0,0.0234,~
+Palmer Square DM Index,0.0,0.0232,~
+LSTA Index,0.0289,0.0164,~
+Deal WACC,0.0894,0.0121,~
+Attach,0.0956,0.0096,~
+Thickness,0.0297,0.0092,✓
+% <50,0.0,0.0076,~
+VIX,0.0,0.0075,~
+Spread,0.0942,0.0075,~
+Manager Discount,0.0298,0.0,~
+NC Yrs left,0.0284,0.0,~
+HY CDX,0.0342,0.0,~
+Excess Spread,0.0393,0.0,~
+RP Yrs left,0.0509,0.0,~
+% CCC,0.0507,0.0,~
