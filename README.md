@@ -122,7 +122,7 @@ The training pipeline builds the pricing model and prepares the real historical 
 
 ---
 
-## Production Pipeline (Online / App)
+## MVP Workflow
 
 The production pipeline is used when a user enters a new tranche in the UI or through the API.
 
@@ -194,7 +194,7 @@ The production pipeline is used when a user enters a new tranche in the UI or th
 
 ---
 
-## Practical Interpretation of Each Module
+## Interpretation of Each Module
 
 ### Pricing module
 Answers:
