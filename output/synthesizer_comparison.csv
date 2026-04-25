@@ -1,0 +1,6 @@
+Synthesizer,MAE (Ridge baseline),MAE (XGBoost),RMSE (Ridge baseline),RMSE (XGBoost),R2 (Ridge baseline),R2 (XGBoost)
+glow,1.7394,1.2124,2.7855,1.9147,0.6956,0.8562
+ddpm,1.7604,1.1875,3.0126,1.9382,0.6439,0.8526
+ctgan,1.8359,1.421,2.8525,2.0349,0.6808,0.8375
+bootstrap,1.8755,1.2371,3.0278,2.0599,0.6403,0.8335
+none (baseline),1.8348,1.3467,3.0787,2.1382,0.6281,0.8206

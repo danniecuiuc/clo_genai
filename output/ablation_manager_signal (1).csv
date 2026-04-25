@@ -1,0 +1,9 @@
+Config,Model,R2 mean,R2 std,MAE mean,MAE std,RMSE mean,RMSE std
+Full (both signals),Ridge baseline,0.6395,0.0867,1.8373,0.1264,3.258,0.8353
+Full (both signals),XGBoost,0.8156,0.1279,1.1173,0.1822,2.289,1.1539
+Categorical only,Ridge baseline,0.6375,0.0846,1.8782,0.1179,3.2736,0.8624
+Categorical only,XGBoost,0.7693,0.1711,1.1707,0.2028,2.4845,1.2463
+Manager Discount only,Ridge baseline,0.6294,0.0917,1.8568,0.1728,3.304,0.86
+Manager Discount only,XGBoost,0.8192,0.1039,1.106,0.1704,2.2762,0.9929
+Neither (no manager signal),Ridge baseline,0.6221,0.0922,1.929,0.1604,3.3416,0.8917
+Neither (no manager signal),XGBoost,0.7679,0.1734,1.1708,0.1951,2.4694,1.1844
