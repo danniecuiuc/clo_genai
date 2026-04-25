@@ -41,6 +41,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.linear_model import Ridge
 
+from common.bundle import load_bundle, save_bundle
+from common.config import MODEL_BUNDLE_PATH
+
 warnings.filterwarnings("ignore")
 
 # ── Optional heavy imports (graceful degradation) ──────────────────────────
@@ -145,6 +148,7 @@ RANDOM_STATE    = 42
 TEST_SIZE       = 0.15
 
 TARGET          = "Price"
+TARGET_FALLBACKS = ["Price", "Cover Price", "Spread"]
 
 NUMERIC_FEATURES = [
     "Manager Discount",
@@ -206,9 +210,18 @@ def load_data(path: str = DATA_PATH) -> pd.DataFrame:
     df.columns = headers
     df = df.reset_index(drop=True)
 
+    # Normalize target naming so downstream code can always use TARGET.
+    if TARGET not in df.columns:
+        for candidate in TARGET_FALLBACKS:
+            if candidate in df.columns:
+                if candidate != TARGET:
+                    df[TARGET] = df[candidate]
+                break
+
     # Coerce numeric columns
     for col in NUMERIC_FEATURES + [TARGET]:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
 
     # Parse dates (not used as features but kept for audit / filtering)
     for date_col in ["Trade Date", "Closing Date"]:
@@ -1077,6 +1090,71 @@ class PricingModel:
             log.info("Actuals vs Predicted chart saved to actuals_vs_predicted.png")
 
 
+def train_and_save_bundle(
+    df: pd.DataFrame,
+    bundle_path: str = str(MODEL_BUNDLE_PATH),
+    synth_rows: int = N_SYNTH_ROWS,
+    random_state: int = RANDOM_STATE,
+    similarity_on_real_only: bool = True,
+) -> dict:
+    """
+    Train pricing + similarity models and save a reusable bundle for UI inference.
+    """
+    data = df.copy().reset_index(drop=True)
+    if TARGET not in data.columns:
+        raise ValueError(f"Target column '{TARGET}' not found in input data.")
+
+    train_df, test_df = train_test_split(data, test_size=TEST_SIZE, random_state=random_state)
+    if synth_rows > 0:
+        synth_df = generate_synthetic(train_df, n_rows=synth_rows, method=SYNTH_METHOD)
+        train_aug = pd.concat([train_df, synth_df], ignore_index=True)
+    else:
+        train_aug = train_df
+
+    pricing_model = PricingModel()
+    pricing_model.fit(train_aug[ALL_FEATURES], train_aug[TARGET].astype(float))
+    metrics = pricing_model.evaluate(test_df[ALL_FEATURES], test_df[TARGET].astype(float))
+
+    similarity_ref = train_df if similarity_on_real_only else train_aug
+    similarity_model = SimilarityModule(n_neighbors=N_COMPS)
+    similarity_model.fit(similarity_ref)
+
+    bundle = {
+        "model_version": MODEL_VERSION,
+        "target": TARGET,
+        "all_features": ALL_FEATURES,
+        "pricing_model": pricing_model,
+        "similarity_model": similarity_model,
+        "metrics": metrics,
+        "train_rows": int(len(train_aug)),
+        "test_rows": int(len(test_df)),
+    }
+    save_bundle(bundle, bundle_path)
+    return {
+        "bundle_path": bundle_path,
+        "metrics": metrics,
+        "train_rows": int(len(train_aug)),
+        "test_rows": int(len(test_df)),
+    }
+
+
+def predict_from_bundle(query_row: pd.DataFrame, bundle_path: str = str(MODEL_BUNDLE_PATH)) -> dict:
+    """
+    Predict point/band/features and comparable deals from a saved bundle.
+    """
+    bundle = load_bundle(bundle_path)
+    pricing_model: PricingModel = bundle["pricing_model"]
+    similarity_model: SimilarityModule = bundle["similarity_model"]
+
+    if query_row.empty:
+        raise ValueError("Query row is empty.")
+    x = query_row[bundle["all_features"]].copy()
+    pricing = pricing_model.predict(x)
+    comps = similarity_model.query(x)
+    pricing["comparables"] = comps.to_dict(orient="records")
+    return pricing
+
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 6. BATCH PRICING
@@ -1392,7 +1470,13 @@ RUN_QUERY    = True
 RUN_COMPARE  = True    # Benchmark all synthesizers vs Ridge and XGBoost (5-fold CV)
 RUN_ABLATION = False   # Manager signal ablation (already done — categorical dropped)
 
-main(run_batch=RUN_BATCH, run_query=RUN_QUERY, run_compare=RUN_COMPARE, run_ablation_flag=RUN_ABLATION)
+if __name__ == "__main__":
+    main(
+        run_batch=RUN_BATCH,
+        run_query=RUN_QUERY,
+        run_compare=RUN_COMPARE,
+        run_ablation_flag=RUN_ABLATION,
+    )
 
 
 # In[ ]:
