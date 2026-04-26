@@ -45,24 +45,17 @@ Upload user input
 Click Load Bundle + Price Query Row to get predicted price, bounds, feature importance, and comparable deals
 
 
-### Note:
-1. pricing training data are from both real + synthetic; however, similarity reference data are from real only, 
-to provide more color of real comparable deals.
-2. The current LLM memo module is still a stub/offline sample, not a live API integration yet.
-This is for future work, not included in this MVP version.
-
-# Pipeline Overview
+# MVP Workflow
 
 This project follows a two-layer architecture:
 
-- **Training pipeline (offline)**: prepares data, trains pricing models, evaluates them, and saves model artifacts
-- **Production pipeline (online / app)**: accepts a new tranche input, runs preprocessing and feature generation, produces pricing outputs, and returns similar real historical deals
+- **Training pipeline**: prepares data, trains pricing models, evaluates them, and saves model artifacts
+- **Predicting pipeline**: accepts a new tranche input, runs preprocessing and feature generation, produces pricing outputs, and returns similar real historical deals
 
 This design keeps pricing and comparable-deal retrieval as two parallel outputs. The pricing model estimates a target value such as spread, while the similarity module returns ranked real historical deals for interpretability, trust, and comps-based workflow support.
-
 ---
 
-## Training Pipeline (Offline)
+## Training Pipeline
 
 The training pipeline builds the pricing model and prepares the real historical similarity reference set used later in production.
 
@@ -138,10 +131,8 @@ The training pipeline builds the pricing model and prepares the real historical 
 
 ---
 
-## MVP Workflow
-
+## Predicting Pipeline (User)
 The production pipeline is used when a user enters a new tranche in the UI or through the API.
-
 ### Step by step
 
 1. **Receive user input**
@@ -241,7 +232,36 @@ Outputs:
 
 ---
 
-## Summary
+### Note:
+1. pricing training data are from both real + synthetic; however, similarity reference data are from real only, 
+to provide more color of real comparable deals.
+2. The current LLM memo module is still a stub/offline sample, not a live API integration yet.
+This is for future work, not included in this MVP version.
 
-**Training:** real data for comps + real/synthetic data for pricing-model training  
-**Production:** user input goes through one shared preprocessing path, then branches into pricing output and real-deal similarity output in parallel
+### Planned / Future Work
+Advanced synthetic data (DDPM / generative models)
+Better uncertainty modeling (quantile / Bayesian)
+Real-time market data integration
+LLM memo generation (currently stub)
+Better feature engineering (macro + credit)
+Model ensembling
+Cloud deployment
+
+
+### Team Member Responsibilities
+#### Grant Bloch
+- Gathered market insights and domain knowledge
+- Contributed to input data understanding
+- Worked on pricing models and evaluation of model results
+#### Zheng Sun
+- Designed system architecture and workflow
+- Implemented similarity model
+- Implemented the UI infrastructure
+#### Danni Chen
+- Built modular codebase and integrated code from other team members
+- Designed execution piplines, improved UI and codebase 
+- Evaluated technical risks and future roadmap
+#### Vijeet Prasad
+- Tested and bootstrap synthetic data (bootstrap)
+- Track project plan vs actual execution progress
+- Compiled presentation slides
