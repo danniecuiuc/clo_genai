@@ -54,7 +54,7 @@ This project follows a two-layer architecture:
 - **Training pipeline**: prepares data, trains pricing models, evaluates them, and saves model artifacts
 - **Predicting pipeline**: accepts a new tranche input, runs preprocessing and feature generation, produces pricing outputs, and returns similar real historical deals
 
-This design keeps pricing and comparable-deal retrieval as two parallel outputs. The pricing model estimates a target value such as spread, while the similarity module returns ranked real historical deals for interpretability, trust, and comps-based workflow support.
+##### This design keeps pricing and comparable-deal retrieval as two parallel outputs. The pricing model estimates a target value such as spread, while the similarity module returns ranked real historical deals for interpretability, trust, and comps-based workflow support.
 ---
 
 ## Training Pipeline
