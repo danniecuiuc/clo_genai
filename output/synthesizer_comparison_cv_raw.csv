@@ -1,0 +1,51 @@
+Synthesizer,Model,Fold,MAE,MedAE,RMSE,R2
+none (baseline),Ridge baseline,1,1.885,1.3065,3.038,0.5916
+none (baseline),XGBoost,1,1.1335,0.7268,1.739,0.8662
+bootstrap,Ridge baseline,1,1.8432,1.3862,2.9609,0.6121
+bootstrap,XGBoost,1,1.2868,0.7547,2.1522,0.7951
+ctgan,Ridge baseline,1,2.0219,1.5423,2.8042,0.6521
+ctgan,XGBoost,1,1.3279,0.9687,2.0084,0.8215
+glow,Ridge baseline,1,1.7511,1.1907,2.7486,0.6657
+glow,XGBoost,1,1.0308,0.6833,1.556,0.8929
+ddpm,Ridge baseline,1,1.8435,1.3367,2.9567,0.6132
+ddpm,XGBoost,1,1.2998,0.7698,2.3523,0.7552
+none (baseline),Ridge baseline,2,1.6913,1.1489,2.3819,0.4843
+none (baseline),XGBoost,2,0.9164,0.7033,1.2509,0.8578
+bootstrap,Ridge baseline,2,1.5638,1.048,2.2085,0.5567
+bootstrap,XGBoost,2,0.9847,0.762,1.3241,0.8406
+ctgan,Ridge baseline,2,2.0101,1.6475,2.5104,0.4272
+ctgan,XGBoost,2,1.1362,0.944,1.4948,0.7969
+glow,Ridge baseline,2,1.5281,1.1164,2.0518,0.6173
+glow,XGBoost,2,0.9482,0.7864,1.2591,0.8559
+ddpm,Ridge baseline,2,1.7364,1.1574,2.4824,0.4399
+ddpm,XGBoost,2,0.9196,0.6853,1.288,0.8492
+none (baseline),Ridge baseline,3,1.8536,1.2434,3.2916,0.7523
+none (baseline),XGBoost,3,1.205,0.6335,2.8655,0.8123
+bootstrap,Ridge baseline,3,1.9965,1.3787,3.2483,0.7588
+bootstrap,XGBoost,3,1.1107,0.6472,2.2751,0.8817
+ctgan,Ridge baseline,3,2.2512,1.4223,3.9492,0.6435
+ctgan,XGBoost,3,1.3455,0.9547,2.1341,0.8959
+glow,Ridge baseline,3,1.9124,1.1821,3.5281,0.7155
+glow,XGBoost,3,1.3142,0.6993,3.5899,0.7054
+ddpm,Ridge baseline,3,1.7878,0.9835,3.4211,0.7325
+ddpm,XGBoost,3,1.1886,0.6361,2.7943,0.8215
+none (baseline),Ridge baseline,4,2.7234,1.3332,8.5023,-1.3275
+none (baseline),XGBoost,4,0.8598,0.5447,1.3372,0.9424
+bootstrap,Ridge baseline,4,2.3128,1.2482,6.0753,-0.1884
+bootstrap,XGBoost,4,1.0577,0.5729,2.5626,0.7886
+ctgan,Ridge baseline,4,2.1147,1.4197,4.3012,0.4043
+ctgan,XGBoost,4,1.1105,0.8077,1.568,0.9208
+glow,Ridge baseline,4,2.6283,1.3591,7.3884,-0.7576
+glow,XGBoost,4,0.9088,0.6393,1.386,0.9381
+ddpm,Ridge baseline,4,2.0646,1.6154,3.4291,0.6214
+ddpm,XGBoost,4,1.0323,0.6904,1.9529,0.8772
+none (baseline),Ridge baseline,5,1.9222,1.182,4.636,0.5544
+none (baseline),XGBoost,5,1.0536,0.6725,2.5552,0.8646
+bootstrap,Ridge baseline,5,1.8911,1.1664,4.7195,0.5382
+bootstrap,XGBoost,5,1.0844,0.718,2.5914,0.8608
+ctgan,Ridge baseline,5,2.2163,1.3279,5.1954,0.4404
+ctgan,XGBoost,5,1.2449,0.709,2.7901,0.8386
+glow,Ridge baseline,5,1.8696,1.165,4.6662,0.5486
+glow,XGBoost,5,1.0833,0.6633,2.6976,0.8491
+ddpm,Ridge baseline,5,1.9251,1.2289,4.6136,0.5587
+ddpm,XGBoost,5,1.1221,0.7212,2.7635,0.8417
