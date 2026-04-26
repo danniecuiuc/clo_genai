@@ -19,7 +19,7 @@ Danni Chen (dc3944), Grant Bloch (gb2934), Vijeet Prasad (vp2580), Zheng Sun (zs
 ##### run below training pipeline: 
 - Raw data → clean → features → synthetic data → train models → save model
 
-##### How to run (exact commands)
+##### How to run
 ```shell
 cd "/Users/nini/Library/Mobile Documents/com~apple~CloudDocs/dev_icloud/clo_genai"
 export PYTHONPATH="$PWD" # SET YOUR WORKING DIRECTORY IF IMPORT ERROR
