@@ -92,14 +92,14 @@ The training pipeline builds the pricing model and prepares the real historical 
      - `X_train_pricing`
      - `y_train_pricing`
 
-6. **Preprocess the real-only similarity dataset**
-   - Apply the same cleaning and feature-generation logic to the real historical data only
-   - Transform the real historical deals into the same comparable feature space used by production inference
+6. **Preprocess the similarity dataset**
+   - Apply the same cleaning and feature-generation logic to the real historical data for similarity modules
+   - Transform the real historical deals into the same comparable feature space used by inference
 
 7. **Build the similarity reference set**
    - Store the processed real historical feature vectors
    - Store real historical metadata needed for UI display, such as Bloomberg ID, manager, spread, trade date, and other descriptive fields
-   - Fit or store a nearest-neighbor reference index on the real-only feature matrix
+   - Fit or store a nearest-neighbor reference index on the feature matrix
 
 8. **Train pricing models**
    - Train baseline and nonlinear pricing models on the pricing dataset:
