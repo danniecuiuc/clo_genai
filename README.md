@@ -254,13 +254,13 @@ to provide more color of real comparable deals.
 This is for future work, not included in this MVP version.
 
 ### Planned / Future Work
-Advanced synthetic data (DDPM / generative models)
-Better uncertainty modeling (quantile / Bayesian)
-Real-time market data integration
-LLM memo generation (currently stub)
-Better feature engineering (macro + credit)
-Model ensembling
-Cloud deployment
+- Advanced synthetic data (DDPM / generative models)
+- Better uncertainty modeling (quantile / Bayesian)
+- Real-time market data integration
+- LLM memo generation (currently stub)
+- Better feature engineering (macro + credit)
+- Model ensembling
+- Cloud deployment
 
 
 ### Team Member Responsibilities
