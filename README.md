@@ -19,13 +19,15 @@ Danni Chen (dc3944), Grant Bloch (gb2934), Vijeet Prasad (vp2580), Zheng Sun (zs
 ##### run below training pipeline: 
 - Raw data → clean → features → synthetic data → train models → save model
 
-##### How to run (exact commands)
+##### How to run
+A) Train and save bundle from CLI
+Run 
 ```shell
 cd "/Users/nini/Library/Mobile Documents/com~apple~CloudDocs/dev_icloud/clo_genai"
 export PYTHONPATH="$PWD" # SET YOUR WORKING DIRECTORY IF IMPORT ERROR
 CLO_WRITE_ARTIFACTS=1 python pricing/clo_pricing.py
 ```
-A) Train and save bundle from CLI
+or 
 ```shell
 python3 main.py train-save \
   --data-path "input/raw/CLO_Tranche_Data.xlsx" \
@@ -52,7 +54,7 @@ This project follows a two-layer architecture:
 - **Training pipeline**: prepares data, trains pricing models, evaluates them, and saves model artifacts
 - **Predicting pipeline**: accepts a new tranche input, runs preprocessing and feature generation, produces pricing outputs, and returns similar real historical deals
 
-This design keeps pricing and comparable-deal retrieval as two parallel outputs. The pricing model estimates a target value such as spread, while the similarity module returns ranked real historical deals for interpretability, trust, and comps-based workflow support.
+##### This design keeps pricing and comparable-deal retrieval as two parallel outputs. The pricing model estimates a target value such as spread, while the similarity module returns ranked real historical deals for interpretability, trust, and comps-based workflow support.
 ---
 
 ## Training Pipeline
@@ -61,73 +63,86 @@ The training pipeline builds the pricing model and prepares the real historical 
 
 ### Step by step
 
-1. **Load raw historical Excel**
-   - Read the real CLO tranche dataset from the input folder
-   - This real historical dataset is the source of truth for comparable-deal retrieval and historical metadata
+1. **Load raw historical data**
 
-2. **Load or generate synthetic bootstrap data**
-   - The pipeline can either:
-     - load a pre-generated bootstrap synthetic dataset from file, or
-     - generate synthetic data on the fly using the repository bootstrap module
-   - Synthetic data is used only to improve pricing-model training robustness on a small sample
-   - Synthetic data is **not** used for similar-deal retrieval in the UI
+- Read the real CLO tranche dataset from Excel / CSV
+- Standardize column names and data types
+- Normalize the target column to Price
+- Use real historical data as the source of truth for comparable-deal retrieval
 
-3. **Create two separate datasets**
-   - **Pricing dataset**: real + synthetic
-   - **Similarity reference dataset**: real historical data only
+2. **Generate synthetic data**
 
-4. **Preprocess the pricing dataset**
-   - Clean missing values
-   - Standardize column names and data types
-   - Parse date columns
-   - Encode categorical variables
-   - Scale numeric variables where needed
-   - This preprocessing branch is used for pricing-model training
+- Generate synthetic rows during training if enabled
+- Supported methods: DDPM, bootstrap, CTGAN, GLOW
+- DDPM can be selected as the default in the UI
+- Synthetic data is used only for pricing-model training
+- Synthetic data is not used for similarity retrieval by default
 
-5. **Build pricing features**
-   - Generate the model-ready feature matrix from the pricing dataset
-   - Separate:
-     - `X_train_pricing`
-     - `y_train_pricing`
+3. **Preprocess the pricing dataset**
 
-6. **Preprocess the real-only similarity dataset**
-   - Apply the same cleaning and feature-generation logic to the real historical data only
-   - Transform the real historical deals into the same comparable feature space used by production inference
+- Clean missing values
+- Coerce numeric columns
+- Parse date columns when available
+- Apply median imputation
+- Apply standard scaling
+- Use the same preprocessing logic during training and inference
 
-7. **Build the similarity reference set**
-   - Store the processed real historical feature vectors
-   - Store real historical metadata needed for UI display, such as Bloomberg ID, manager, spread, trade date, and other descriptive fields
-   - Fit or store a nearest-neighbor reference index on the real-only feature matrix
+4. **Build pricing features**
 
-8. **Train pricing models**
-   - Train baseline and nonlinear pricing models on the pricing dataset:
-     - Linear Regression
-     - Ridge Regression
-     - XGBoost
+- Generate model-ready feature matrix from the pricing dataset
+- Separate X_train_pricing and y_train_pricing
+- Use numeric CLO features across tranche structure, collateral quality, deal economics, and market variables
 
-9. **Evaluate pricing models**
-   - Compute validation metrics such as RMSE, MAE, and R²
-   - Compare model performance
-   - Select the best pricing model for deployment
+5. **Build similarity reference set**
 
-10. **Generate pricing explainability artifacts**
-    - Create feature-importance outputs for the selected pricing model
-    - Save charts and summary tables for demo / inspection
+- Apply the same feature definitions to real historical data
+- Store processed feature vectors
+- Store real metadata for UI display
+- Fit a KNN nearest-neighbor index for comparable-deal retrieval
 
-11. **Estimate pricing uncertainty**
-    - Use validation residuals from the selected pricing model
-    - Build a simple pricing band or uncertainty flag
-    - This uncertainty belongs to the pricing module, not to the similarity module
+6. **Train pricing models**
 
-12. **Save model bundle**
-    - Save all artifacts required by the production pipeline, including:
-      - selected trained pricing model
-      - preprocessing objects
-      - feature column definitions
-      - residual statistics for uncertainty
-      - real-only similarity feature matrix
-      - real-only similarity metadata
-      - optional fitted KNN object
+- Train Ridge Regression as the transparent baseline
+- Train XGBoost as the nonlinear final model when available
+- Fall back to Ridge-only mode if XGBoost is unavailable
+
+7. **Evaluate pricing models**
+
+- Compute MAE, Median Absolute Error, RMSE, and R²
+- Compare Ridge and XGBoost performance when both are available
+- Store metrics in the model bundle and show them in the UI
+
+8. **Generate explainability outputs**
+
+- Create feature-importance outputs
+- Use Ridge coefficients for baseline importance
+- Use XGBoost feature importance for nonlinear model drivers
+- Save charts and tables when artifact writing is enabled
+
+9. **Estimate pricing uncertainty**
+
+- Generate lower and upper confidence bounds
+- Use quantile XGBoost models when available
+- Fall back to residual-based confidence bands otherwise
+- Uncertainty belongs to the pricing module, not the similarity module
+
+10. **Save model bundle**
+
+- Save trained pricing model
+- Save trained similarity model
+- Save preprocessing objects
+- Save feature definitions
+- Save validation metrics
+- Save residual / uncertainty information
+
+11. **UI inference**
+
+- Load the saved model bundle
+- User enters one new CLO tranche
+- Apply trained preprocessing
+- Generate predicted price and uncertainty range
+- Retrieve comparable historical deals
+- Display price, bounds, feature drivers, and comparables in the UI
 
 ---
 
