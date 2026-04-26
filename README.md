@@ -20,12 +20,14 @@ Danni Chen (dc3944), Grant Bloch (gb2934), Vijeet Prasad (vp2580), Zheng Sun (zs
 - Raw data → clean → features → synthetic data → train models → save model
 
 ##### How to run
+A) Train and save bundle from CLI
+Run 
 ```shell
 cd "/Users/nini/Library/Mobile Documents/com~apple~CloudDocs/dev_icloud/clo_genai"
 export PYTHONPATH="$PWD" # SET YOUR WORKING DIRECTORY IF IMPORT ERROR
 CLO_WRITE_ARTIFACTS=1 python pricing/clo_pricing.py
 ```
-A) Train and save bundle from CLI
+or 
 ```shell
 python3 main.py train-save \
   --data-path "input/raw/CLO_Tranche_Data.xlsx" \
